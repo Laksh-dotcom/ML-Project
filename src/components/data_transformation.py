@@ -9,10 +9,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from src.exception import CustomException
 from src.logger import logging
+from src.utils import save_object
 
 @dataclass
 class DataTransformtionConfig:
-    preprocessing_obj_file_path = os.path.join("artifacts", "preprocessing.pkl")
+    preprocessing_obj_file_path = os.path.join("artifiacts", "preprocessing.pkl")
 
 class DataTransformation:
     def __init__(self):
@@ -70,12 +71,37 @@ class DataTransformation:
             preprocessing_obj = self.get_data_transformer_object()
 
             target_column_name = "math_score"
-            num_columns = [
-                'writing_score', 'reading_score'
-                ]
+            # num_columns = [
+            #     'writing_score', 'reading_score'
+            #     ]
             
             input_train_df = train_df.drop(columns = [target_column_name], axis = 1)
+            target_train_df = train_df[target_column_name]
 
-        except:
-            pass
+            input_test_df = test_df.drop(columns = [target_column_name], axis = 1)
+            target_test_df = test_df[target_column_name]
+
+            input_feature_train_arr = preprocessing_obj.fit_transform(input_train_df)
+            input_feature_test_arr = preprocessing_obj.transform(input_test_df)
+
+            train_arr = np.c_[
+                input_feature_train_arr, np.array(target_train_df)
+            ]
+
+            test_arr = np.c_[
+                input_feature_test_arr, np.array(target_test_df)
+            ]
+            save_object(
+                file_path = self.data_transformation_config.preprocessing_obj_file_path,
+                obj = preprocessing_obj
+            )
+            logging.info("Data Transformation Done.")
+            return(
+                train_arr,
+                test_arr,
+                self.data_transformation_config.preprocessing_obj_file_path
+            )
+
+        except Exception as e:
+            raise CustomException(e, sys)
         
